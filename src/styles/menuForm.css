@@ -1,0 +1,128 @@
+/* Variables pour faciliter le changement de couleur par ton pote designer */
+:root {
+  --accent: #ff7e5f; /* Corail doux */
+  --bg-input: #f8fafc;
+  --border: #e2e8f0;
+  --text-dark: #334155;
+  --text-light: #64748b;
+  --radius: 12px;
+}
+
+.form-wrapper {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  max-width: 450px;
+  margin: 20px auto;
+}
+
+.form-title {
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-dark);
+  margin-bottom: 25px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.input-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 6px;
+  margin-left: 4px;
+}
+
+/* On personnalise tous les inputs d'un coup */
+.modern-form input, 
+.modern-form textarea, 
+.modern-form select {
+  border: 1.5px solid var(--border);
+  background: var(--bg-input);
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  color: var(--text-dark);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.modern-form input:focus, 
+.modern-form textarea:focus {
+  border-color: var(--accent);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(255, 126, 95, 0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 15px;
+}
+
+/* On cache l'input file moche et on stylise le label */
+.custom-file-upload {
+  display: block;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.3s;
+  background: var(--bg-input);
+}
+
+.custom-file-upload:hover {
+  border-color: var(--accent);
+  background: rgba(255, 126, 95, 0.05);
+}
+
+.custom-file-upload input[type="file"] {
+  display: none;
+}
+
+.file-content svg {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 8px;
+  color: var(--text-light);
+}
+
+.file-content span {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(255, 126, 95, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-top: 10px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 126, 95, 0.4);
+}
+
+.error-hint {
+  color: #ef4444;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  font-weight: 500;
+}
