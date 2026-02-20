@@ -1,9 +1,10 @@
 // MenuDisplay.jsx
 import React from "react";
 
-const MenuDisplay = ({ menu, theme, onEdit, onDelete }) => {
+const MenuDisplay = ({ menu, theme, onEdit, onDelete, onComposeMenu }) => {
   // Vérifie s'il y a des éléments appartenant aux catégories du thème actuel
   const hasItems = menu.some(item => theme.categories.includes(item.categorie));
+  const showMenuComposer = theme.id === 'restaurant' || theme.id === 'tea';
 
   return (
     <div className="display-container" style={{ 
@@ -31,21 +32,36 @@ const MenuDisplay = ({ menu, theme, onEdit, onDelete }) => {
         gap: '10px'
       }}>
         <h2 className="main-title" style={{ margin: 0, flex: 1 }}>Aperçu du Catalogue</h2>
-        {hasItems && (
-          <button 
-            onClick={() => onDelete('ALL')} 
-            className="btn-danger"
-            style={{ 
-              padding: '6px 12px', 
-              fontSize: '0.8rem', 
-              whiteSpace: 'nowrap',
-              boxShadow: 'none'
-            }}
-            title="Tout supprimer"
-          >
-            Tout supprimer
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {showMenuComposer && (
+            <button 
+              className="btn-secondary" 
+              onClick={onComposeMenu} 
+              style={{ 
+                padding: '6px 12px', 
+                fontSize: '0.8rem', 
+                whiteSpace: 'nowrap', 
+                boxShadow: 'none',
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px' 
+              }}
+              title="Sélectionner des plats pour un menu spécial"
+            >
+              <span>🍽️</span> Composer Menu
+            </button>
+          )}
+          {hasItems && (
+            <button 
+              onClick={() => onDelete('ALL')} 
+              className="btn-danger"
+              style={{ padding: '6px 12px', fontSize: '0.8rem', whiteSpace: 'nowrap', boxShadow: 'none' }}
+              title="Tout supprimer"
+            >
+              Tout supprimer
+            </button>
+          )}
+        </div>
       </div>
 
       {theme.categories.map((cat) => {
@@ -67,7 +83,9 @@ const MenuDisplay = ({ menu, theme, onEdit, onDelete }) => {
                   <div className="card-info">
                     <div className="card-header">
                       <h4>{item.nom}</h4>
-                      <span className="price">{parseFloat(item.prix).toFixed(2)} €</span>
+                      {(item.prix !== null && item.prix !== undefined) && (
+                        <span className="price">{parseFloat(item.prix).toFixed(2)} €</span>
+                      )}
                     </div>
                     <p className="description">{item.description}</p>
                     <div className="card-actions" style={{marginTop: '10px', display: 'flex', gap: '8px', justifyContent: 'flex-end'}}>

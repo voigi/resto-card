@@ -92,12 +92,12 @@ const CsvCreatorModal = ({ isOpen, onClose, onImport, theme }) => {
           <table className="csv-table">
             <thead>
               <tr>
-                <th>{theme.labels.item}</th>
-                <th>{theme.labels.description}</th>
-                <th style={{width: '100px'}}>{theme.labels.price}</th>
-                <th style={{width: '150px'}}>{theme.labels.category}</th>
-                <th style={{width: '130px'}}>Image <span style={{ fontSize: '0.8em', fontWeight: 'normal', color: 'var(--text-light)' }}>(Optionnel)</span></th>
-                <th style={{width: '40px'}}></th>
+                <th style={{ minWidth: '180px', whiteSpace: 'nowrap' }}>{theme.labels.item}</th>
+                <th style={{ minWidth: '250px', whiteSpace: 'nowrap' }}>{theme.labels.description}</th>
+                <th style={{width: '120px', whiteSpace: 'nowrap'}}>{theme.labels.price}</th>
+                <th style={{width: '180px', whiteSpace: 'nowrap'}}>{theme.labels.category}</th>
+                <th style={{width: '200px', whiteSpace: 'nowrap'}}>Image <span style={{ fontSize: '0.8em', fontWeight: 'normal', color: 'var(--text-light)' }}>(Optionnel)</span></th>
+                <th style={{width: '50px'}}></th>
               </tr>
             </thead>
             <tbody>

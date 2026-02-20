@@ -20,7 +20,7 @@ Font.register({
 });
 
 // ----- COMPONENT -----
-const MenuPdf = ({ menu, theme, establishmentName }) => {
+const MenuPdf = ({ menu, theme, establishmentName, subtitle, menus = [], menuPageTitle = "Nos Menus" }) => {
   if (!theme) {
     console.error("Theme PDF undefined");
     return <Document><Page><Text>Theme non défini</Text></Page></Document>;
@@ -121,6 +121,7 @@ const MenuPdf = ({ menu, theme, establishmentName }) => {
       backgroundColor: THEME.COLORS.background,
       color: THEME.COLORS.textPrimary,
       position: "relative",
+      flexDirection: "column",
     },
     
     pageBackground: {
@@ -141,6 +142,76 @@ const MenuPdf = ({ menu, theme, establishmentName }) => {
       borderBottomWidth: theme.id === "restaurant" ? 1 : 2,
       borderBottomColor: theme.id === "restaurant" ? THEME.COLORS.border : THEME.COLORS.accent,
       borderBottomStyle: "solid",
+    },
+
+    // Menu Page Style
+    menuPage: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 1,
+    },
+
+    menuTitle: {
+      fontSize: 24,
+      fontFamily: THEME.FONTS.heading,
+      color: THEME.COLORS.accent,
+      textAlign: "center",
+      marginBottom: 15,
+      textTransform: "uppercase",
+      borderBottomWidth: 2,
+      borderBottomColor: THEME.COLORS.accent,
+      paddingBottom: 5,
+      alignSelf: "center",
+    },
+
+    // Structure demandée : Container > Card > H2 + Content + Price
+    menuContainer: {
+      width: "100%",
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      alignItems: "stretch",
+      marginTop: 10,
+    },
+
+    menuCard: {
+      padding: 30,
+      borderWidth: 1,
+      borderColor: THEME.COLORS.border,
+      borderRadius: 6,
+      alignItems: "center",
+      backgroundColor: "rgba(255, 255, 255, 0.8)", // Fond léger pour détacher du background global
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      margin: 5, // Marge autour de chaque carte pour l'espacement
+    },
+
+    menuH2: {
+      fontSize: 22,
+      fontFamily: THEME.FONTS.heading,
+      color: THEME.COLORS.textPrimary,
+      textAlign: "center",
+      marginBottom: 20,
+      letterSpacing: 1,
+    },
+
+    menuPrice: {
+      marginTop: 'auto',
+      paddingTop: 15,
+      fontSize: 18,
+      fontFamily: THEME.FONTS.heading,
+      color: THEME.COLORS.accent,
+      textAlign: 'center',
+    },
+
+    menuFormulaText: {
+      fontFamily: THEME.FONTS.bodyItalic,
+      fontSize: 12,
+      color: THEME.COLORS.textPrimary,
+      textAlign: 'center',
+      lineHeight: 1.5,
+      marginBottom: 15,
     },
     
     logoContainer: {
@@ -165,7 +236,7 @@ const MenuPdf = ({ menu, theme, establishmentName }) => {
     },
     
     subtitle: {
-      fontSize: theme.id === "restaurant" ? 14 : 13,
+      fontSize: 13,
       fontFamily: THEME.FONTS.bodyItalic,
       color: THEME.COLORS.accent,
       marginTop: 6,
@@ -487,6 +558,8 @@ const MenuPdf = ({ menu, theme, establishmentName }) => {
 
   // Fonction pour rendre le prix selon le style
   const renderPrice = (price) => {
+    if (price === null || price === undefined) return null;
+
     const formattedPrice = parseFloat(price).toFixed(2);
     
     switch (config.priceStyle) {
@@ -523,6 +596,14 @@ const MenuPdf = ({ menu, theme, establishmentName }) => {
     return acc;
   }, {});
 
+  const safeMenus = Array.isArray(menus) ? menus : [];
+  // On vérifie s'il y a au moins un menu valide à afficher
+  const validMenus = safeMenus.filter(m => m && typeof m === 'object');
+  const hasMenus = validMenus.length > 0;
+
+  // Vérifie s'il y a des éléments à afficher dans le catalogue (hors menus spéciaux)
+  const hasCatalogueItems = Object.values(menuByCategory).some(items => items.length > 0);
+
   return (
     <Document
       title={`${establishmentName} - Menu`}
@@ -548,7 +629,7 @@ const MenuPdf = ({ menu, theme, establishmentName }) => {
             )}
           </View>
           <Text style={styles.title}>{establishmentName}</Text>
-          <Text style={styles.subtitle}>{theme.labels.subtitle}</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
           
           {/* Éléments décoratifs selon le thème */}
           {config.decorativeElements && (
@@ -565,51 +646,108 @@ const MenuPdf = ({ menu, theme, establishmentName }) => {
           )}
         </View>
 
-        {/* MENU SECTIONS */}
+        {/* Standard Layout (Full Width) */}
         {theme.categories.map((cat) => {
-          const items = menuByCategory[cat] || [];
-          
-          if (items.length === 0) return null;
-
-          return (
-            <View key={cat} style={styles.section} wrap={false}>
-              <View style={getSectionTitleStyle()}>
-                <Text style={getSectionTitleTextStyle()}>{cat}</Text>
-              </View>
-              
-              {items.map((item) => (
-                <View key={item.id} style={getItemCardStyle()} wrap={false}>
-                  <View style={styles.itemContainer}>
-                    {item.image && (
-                      <View style={getImageStyle()}>
-                        <Image src={item.image} style={styles.itemImage} />
-                      </View>
-                    )}
-                    
-                    <View style={styles.itemContent}>
-                      <View style={styles.itemHeader}>
-                        <Text style={styles.itemName}>{item.nom}</Text>
-                        {renderPrice(item.prix)}
-                      </View>
-                      
-                      {item.description && (
-                        <Text style={styles.itemDescription}>
-                          {item.description}
-                        </Text>
+            const items = menuByCategory[cat] || [];
+            if (items.length === 0) return null;
+            return (
+              <View key={cat} style={styles.section} wrap={false}>
+                <View style={getSectionTitleStyle()}>
+                  <Text style={getSectionTitleTextStyle()}>{cat}</Text>
+                </View>
+                {items.map((item) => (
+                  <View key={item.id} style={getItemCardStyle()} wrap={false}>
+                    <View style={styles.itemContainer}>
+                      {item.image && (
+                        <View style={getImageStyle()}>
+                          <Image src={item.image} style={styles.itemImage} />
+                        </View>
                       )}
+                      <View style={styles.itemContent}>
+                        <View style={styles.itemHeader}>
+                          <Text style={styles.itemName}>{item.nom}</Text>
+                          {renderPrice(item.prix)}
+                        </View>
+                        {item.description && <Text style={styles.itemDescription}>{item.description}</Text>}
+                      </View>
                     </View>
                   </View>
-                </View>
-              ))}
+                ))}
+              </View>
+            );
+          })
+        }
+
+        {/* CONTENT (Menu Special at the end) */}
+        {hasMenus && (
+          <>
+            {hasCatalogueItems && <View break />}
+            <View style={styles.menuPage}>
+              {/* <header> <h1>Nos Menus</h1> </header> */}
+              <View style={[getSectionTitleStyle(), { alignSelf: 'center', marginBottom: 20 }]}>
+                <Text style={getSectionTitleTextStyle()}>{menuPageTitle}</Text>
+              </View>
+              
+              {/* <div class="container"> <div class="menu-card"> */}
+              <View style={styles.menuContainer}>
+                {validMenus.map((menuConfig, index) => {
+                  const menuItems = menu.filter(item => (menuConfig.selectedIds || []).includes(item.id));
+                  
+                  // Ajustement dynamique pour 1, 2 ou 3 colonnes
+                  let width = "80%"; // Un seul menu : large mais pas trop
+                  let padding = 30;
+                  if (validMenus.length === 2) { width = "45%"; padding = 20; } // 45% * 2 + marges < 100%
+                  if (validMenus.length >= 3) { width = "30%"; padding = 10; } // 30% * 3 + marges < 100%
+                  
+                  return (
+                    <View key={menuConfig.id || index} style={[styles.menuCard, { width: width, padding: padding }]}>
+                      
+                      {/* <h2>Menu Gourmand</h2> */}
+                      {menuConfig.menuName && (
+                        <Text style={styles.menuH2} hyphenationCallback={(word) => [word]}>{menuConfig.menuName}</Text>
+                      )}
+                      
+                      {/* Content */}
+                      <View style={{ width: '100%', alignItems: 'center' }}>
+                        {menuConfig.type === 'formula' && (
+                          <Text style={styles.menuFormulaText} hyphenationCallback={(word) => [word]}>{menuConfig.formula}</Text>
+                        )}
+
+                        {menuItems.map((item) => (
+                          <View key={`menu-${item.id}`} style={{ marginBottom: 8, alignItems: 'center' }}>
+                            <Text style={{ fontFamily: THEME.FONTS.bodyBold, fontSize: 12, color: THEME.COLORS.textPrimary, textAlign: 'center' }} hyphenationCallback={(word) => [word]}>
+                              {item.nom}
+                            </Text>
+                            {item.description && (
+                              <Text style={{ fontFamily: THEME.FONTS.bodyItalic, fontSize: 10, color: THEME.COLORS.textSecondary, textAlign: 'center' }} hyphenationCallback={(word) => [word]}>
+                                {item.description}
+                              </Text>
+                            )}
+                          </View>
+                        ))}
+                      </View>
+
+                      {/* <div class="price">25€</div> */}
+                      <Text style={styles.menuPrice} hyphenationCallback={(word) => [word]}>
+                        {menuConfig.price ? (
+                          `${parseFloat(menuConfig.price).toFixed(2)} €`
+                        ) : (
+                          menuConfig.type === 'selection' ? `${menuItems.reduce((sum, i) => sum + (parseFloat(i.prix) || 0), 0).toFixed(2)} €` : ''
+                        )}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
-          );
-        })}
+          </>
+        )}
 
         {/* Empty state */}
-        {menu.length === 0 && (
+        {!hasCatalogueItems && !hasMenus && (
           <View style={{ marginTop: 40 }}>
             <Text style={styles.noItemsText}>
-              Aucun élément n'a encore été ajouté au menu.
+              Aucun élément à afficher.
             </Text>
           </View>
         )}

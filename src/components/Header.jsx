@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 const Header = ({
   establishmentName,
   setEstablishmentName,
+  subtitle,
+  setSubtitle,
   activeTheme,
   onShowThemeSelector,
   setIsCsvCreatorOpen,
@@ -12,9 +14,11 @@ const Header = ({
   setCustomBackground,
   handleLogoUpload,
   customLogo,
-  setCustomLogo
+  setCustomLogo,
+  onLogout
 }) => {
   const [showCsvInfo, setShowCsvInfo] = useState(false);
+  const [imageUploadModal, setImageUploadModal] = useState({ isOpen: false, type: null, title: '' });
 
   return (
     <header className="app-header" style={{ 
@@ -23,14 +27,9 @@ const Header = ({
       borderRadius: '12px', 
       boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
       marginBottom: '30px',
-      border: '1px solid var(--border)',
-      display: 'flex',
-      flexWrap: 'wrap',
-      gap: '20px',
-      alignItems: 'center',
-      justifyContent: 'space-between'
+      border: '1px solid var(--border)'
     }}>
-      <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flex: 1 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '20px', alignItems: 'center', marginBottom: '25px' }}>
         <div style={{ position: 'relative', width: '70px', height: '70px', flexShrink: 0 }}>
             <img 
               src={customLogo || activeTheme.pdf.logo} 
@@ -45,7 +44,7 @@ const Header = ({
                 padding: '2px'
               }}
             />
-            <label 
+            <button
               style={{
                 position: 'absolute',
                 bottom: '-5px',
@@ -61,17 +60,18 @@ const Header = ({
                 cursor: 'pointer',
                 fontSize: '12px',
                 border: '2px solid #fff',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                padding: 0
               }}
               title="Changer le logo"
+              onClick={() => setImageUploadModal({ isOpen: true, type: 'logo', title: 'Changer le logo' })}
             >
               📷
-              <input type="file" accept="image/*" onChange={handleLogoUpload} hidden />
-            </label>
+            </button>
           </div>
           
           {/* Nom de l'établissement */}
-          <div style={{ flex: 1 }}>
+          <div>
             <input
               type="text"
               value={establishmentName}
@@ -89,14 +89,34 @@ const Header = ({
                 outline: 'none'
               }}
             />
-            <div style={{ color: 'var(--text-light)', fontSize: '13px', fontWeight: '500', opacity: 0.8 }}>
-              {activeTheme.labels.subtitle}
-            </div>
+            <input
+              type="text"
+              value={subtitle}
+              onChange={(e) => setSubtitle(e.target.value)}
+              placeholder="Sous-titre de l'établissement"
+              style={{
+                color: 'var(--text-light)',
+                fontSize: '13px',
+                fontWeight: '500',
+                opacity: 0.8,
+                border: 'none',
+                background: 'transparent',
+                width: '100%',
+                fontFamily: 'inherit',
+                outline: 'none'
+              }}
+            />
           </div>
         </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', justifyContent: 'center' }}>
-            <span style={{ fontWeight: '600', color: 'var(--text-light)', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Mode</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '60px', flexWrap: 'wrap', gap: '20px' }}>
+        <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '6px', 
+            alignItems: 'center'
+        }}>
+            <span style={{ fontWeight: '600', color: 'var(--text-light)', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Type d'établissement</span>
             <button 
                 className="btn-secondary" 
                 onClick={onShowThemeSelector}
@@ -120,32 +140,31 @@ const Header = ({
                 {activeTheme.name}
                 <span style={{ fontSize: '0.8em', marginLeft: '4px', color: 'var(--text-light)' }}>⇄</span>
             </button>
-      </div>
+        </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', justifyContent: 'flex-end', flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontWeight: '600', color: 'var(--text-light)', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Contenu</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
+            <span style={{ fontWeight: '600', color: 'var(--text-light)', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Outils d'import</span>
             <div style={{ display: 'flex', gap: '8px' }}>
                 <button className="btn-secondary" onClick={() => setIsCsvCreatorOpen(true)} style={{ fontSize: '0.9rem', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span>⚡</span> Création Rapide
                 </button>
-                
+
                 <button className="btn-secondary" onClick={() => setShowCsvInfo(true)} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', fontSize: '0.9rem', padding: '8px 12px', gap: '6px' }}>
                 <span>📂</span> CSV
                 </button>
             </div>
         </div>
 
-        <div style={{ width: '1px', height: '24px', backgroundColor: 'var(--border)' }}></div>
+        <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--border)' }}></div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontWeight: '600', color: 'var(--text-light)', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Visuel</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
+          <span style={{ fontWeight: '600', color: 'var(--text-light)', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Personnalisation</span>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', fontSize: '0.9rem', padding: '8px 12px', gap: '6px' }}>
+              <button className="btn-secondary" onClick={() => setImageUploadModal({ isOpen: true, type: 'logo', title: 'Changer le logo' })} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', fontSize: '0.9rem', padding: '8px 12px', gap: '6px' }}>
                   <span>📷</span> Logo
-                  <input type="file" accept="image/*" onChange={handleLogoUpload} hidden />
-              </label>
+              </button>
               {customLogo && (
                   <button className="btn-icon-danger" onClick={() => setCustomLogo(null)} title="Supprimer le logo" style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, borderRadius: '6px' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -159,10 +178,9 @@ const Header = ({
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', fontSize: '0.9rem', padding: '8px 12px', gap: '6px' }}>
+              <button className="btn-secondary" onClick={() => setImageUploadModal({ isOpen: true, type: 'background', title: "Changer l'image de fond" })} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', fontSize: '0.9rem', padding: '8px 12px', gap: '6px' }}>
                   <span>🖼️</span> Fond
-                  <input type="file" accept="image/*" onChange={handleBackgroundUpload} hidden />
-              </label>
+              </button>
               {customBackground && (
                   <button className="btn-icon-danger" onClick={() => setCustomBackground(null)} title="Supprimer le fond" style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, borderRadius: '6px' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -175,6 +193,16 @@ const Header = ({
               )}
             </div>
           </div>
+        </div>
+
+        <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--border)' }}></div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
+          <span style={{ fontWeight: '600', color: 'var(--text-light)', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>Session</span>
+          <button className="btn-secondary" onClick={onLogout} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', fontSize: '0.9rem', padding: '8px 12px', gap: '6px', color: 'var(--danger)', borderColor: 'var(--border)' }} title="Fermer la session sécurisée">
+              <span>🔒</span> Déconnexion
+          </button>
+        </div>
         </div>
       </div>
 
@@ -203,6 +231,39 @@ const Header = ({
                   type="file" 
                   accept=".csv" 
                   onChange={(e) => { handleCsvUpload(e); setShowCsvInfo(false); }} 
+                  hidden 
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {imageUploadModal.isOpen && (
+        <div className="modal-overlay" onClick={() => setImageUploadModal({ isOpen: false, type: null, title: '' })}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <h3 style={{ marginBottom: '15px', color: 'var(--text-dark)' }}>{imageUploadModal.title}</h3>
+            <p style={{ color: 'var(--text-light)', marginBottom: '25px' }}>
+              Choisissez une nouvelle image depuis votre ordinateur. Les images sont automatiquement compressées.
+            </p>
+            
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setImageUploadModal({ isOpen: false, type: null, title: '' })}>
+                Annuler
+              </button>
+              <label className="btn-primary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '10px 20px', margin: 0 }}>
+                Parcourir...
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    if (imageUploadModal.type === 'logo') {
+                        handleLogoUpload(e);
+                    } else {
+                        handleBackgroundUpload(e);
+                    }
+                    setImageUploadModal({ isOpen: false, type: null, title: '' });
+                  }} 
                   hidden 
                 />
               </label>

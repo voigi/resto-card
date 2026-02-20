@@ -3,11 +3,14 @@ import Header from "./components/Header";
 import MenuForm from "./components/MenuForm";
 import MenuDisplay from "./components/MenuDisplay";
 import MenuPdf from "./components/MenuPdf";
+import LoginScreen from "./components/LoginScreen";
 import ConfirmationModal from "./components/ConfirmationModal";
 import CsvCreatorModal from "./components/CsvCreatorModal";
+import MenuComposerModal from "./components/MenuComposerModal";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { PDFDownloadLink } from "@react-pdf/renderer";
+import { useSecureAuth } from "./hooks/useSecureAuth";
 import "./styles/app.css";
 
 
@@ -96,20 +99,20 @@ const themes = {
   association: {
     id: "association",
     name: "Association",
-    categories: ["Adhésion", "Événements", "Ateliers", "Boutique", "Dons"],
+    categories: ["Événement", "Atelier", "Autre"],
     labels: {
       title: "Notre Association",
       subtitle: "Ensemble pour agir & partager",
       item: "Intitulé",
-      description: "Détails & Informations",
+      description: "Date, Heure & Détails",
       price: "Tarif (€)",
       category: "Rubrique",
       addBtn: "Ajouter",
       downloadBtn: "Télécharger le document",
       formTitle: "🤝 Ajouter un élément",
-      formSubtitle: "Renseignez les informations (adhésion, event...)",
-      itemNamePlaceholder: "Ex: Cotisation Annuelle, Tombola...",
-      itemDescPlaceholder: "Dates, conditions, avantages...",
+      formSubtitle: "Renseignez les informations (événement, atelier...)",
+      itemNamePlaceholder: "Ex: Fête du club, Atelier poterie...",
+      itemDescPlaceholder: "Lieu, public visé, informations...",
       image: "Visuel / Logo"
     },
     colors: {
@@ -150,7 +153,7 @@ const themes = {
       formTitle: "🏃 Ajouter une activité",
       formSubtitle: "Définissez les détails de la séance",
       itemNamePlaceholder: "Ex: Cours de Zumba, Accès Salle...",
-      itemDescPlaceholder: "Jours, horaires, niveau requis...",
+      itemDescPlaceholder: "Niveau, matériel, coach...",
       image: "Illustration"
     },
     colors: {
@@ -177,6 +180,8 @@ const themes = {
 };
 
 function App() {
+  const { isAuthorized, isLoading, logout, login } = useSecureAuth();
+
   const [menu, setMenu] = useState(() => {
     try {
       const saved = localStorage.getItem("menuData");
@@ -191,7 +196,7 @@ function App() {
   const [initialConfig] = useState(() => {
     try {
       const saved = localStorage.getItem("restoConfig");
-      return saved ? JSON.parse(saved) : {};
+      return saved ? (JSON.parse(saved) || {}) : {};
     } catch (e) {
       console.error("Erreur chargement config", e);
       return {};
@@ -202,13 +207,57 @@ function App() {
   const [editingDish, setEditingDish] = useState(null);
   
   const activeTheme = themes[currentTheme] || themes.tea;
-  const [establishmentName, setEstablishmentName] = useState(initialConfig.establishmentName || activeTheme.labels.title);
+
+  const [establishmentNames, setEstablishmentNames] = useState(() => {
+    const saved = initialConfig.establishmentNames;
+    // Migration from old string format
+    if (initialConfig.establishmentName && typeof initialConfig.establishmentName === 'string') {
+      const allNames = {};
+      for (const themeId in themes) {
+        allNames[themeId] = themes[themeId].labels.title;
+      }
+      allNames[initialConfig.currentTheme || 'tea'] = initialConfig.establishmentName;
+      return allNames;
+    }
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
+      const completeState = {};
+      for (const themeId in themes) {
+        completeState[themeId] = saved[themeId] || themes[themeId].labels.title;
+      }
+      return completeState;
+    }
+    // Default initialization
+    const initialNames = {};
+    for (const themeId in themes) {
+      initialNames[themeId] = themes[themeId].labels.title;
+    }
+    return initialNames;
+  });
+
+  const [subtitles, setSubtitles] = useState(() => {
+    const saved = initialConfig.subtitles;
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) {
+      const completeState = {};
+      for (const themeId in themes) {
+        completeState[themeId] = saved[themeId] || themes[themeId].labels.subtitle;
+      }
+      return completeState;
+    }
+    const initialSubtitles = {};
+    for (const themeId in themes) {
+      initialSubtitles[themeId] = themes[themeId].labels.subtitle;
+    }
+    return initialSubtitles;
+  });
+
   const [customBackground, setCustomBackground] = useState(initialConfig.customBackground || null);
   const [customLogo, setCustomLogo] = useState(initialConfig.customLogo || null);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, itemId: null });
   const [isCsvCreatorOpen, setIsCsvCreatorOpen] = useState(false);
+  const [isMenuComposerOpen, setIsMenuComposerOpen] = useState(false);
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
   const [isModeLocked, setIsModeLocked] = useState(true);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const effectiveTheme = {
     ...activeTheme,
@@ -218,6 +267,52 @@ function App() {
       logo: customLogo || activeTheme.pdf.logo
     }
   };
+
+  const [menus, setMenus] = useState(() => {
+    const loaded = Array.isArray(initialConfig.menus) ? initialConfig.menus.filter(m => m && typeof m === 'object') : [];
+    
+    // Chargement des items pour inférer le thème des anciens menus
+    let allItems = [];
+    try {
+      const savedMenu = localStorage.getItem("menuData");
+      if (savedMenu) allItems = JSON.parse(savedMenu);
+    } catch (e) {}
+
+    const defaultTheme = initialConfig.currentTheme || "tea";
+    
+    return loaded.map((m, idx) => {
+      // Stratégie de réparation : on recalcule le thème en fonction du contenu
+      // pour corriger les menus mal attribués lors des versions précédentes
+      if (m.selectedIds && m.selectedIds.length > 0) {
+        const firstItem = allItems.find(i => i.id === m.selectedIds[0]);
+        if (firstItem) {
+          for (const t of Object.values(themes)) {
+            if (t.categories.includes(firstItem.categorie)) {
+              return { ...m, id: m.id || Date.now() + idx, theme: t.id };
+            }
+          }
+        }
+      }
+      
+      // Si le menu est vide ou sans correspondance, on garde son thème s'il existe, sinon 'tea'
+      return { ...m, id: m.id || Date.now() + idx, theme: m.theme || "tea" };
+    });
+  });
+
+  const [menuPageTitle, setMenuPageTitle] = useState(() => {
+    const saved = initialConfig.menuPageTitle;
+    // Si c'est une chaîne (ancienne version), on initialise un objet avec cette valeur pour tous les thèmes
+    if (typeof saved === 'string') {
+      return { tea: saved, restaurant: saved, association: saved, sport: saved };
+    }
+    // Sinon on retourne l'objet sauvegardé ou les valeurs par défaut
+    return saved || {
+      tea: "Nos Menus",
+      restaurant: "Nos Menus",
+      association: "Nos Menus",
+      sport: "Nos Menus"
+    };
+  });
 
   useEffect(() => {
     try {
@@ -229,14 +324,14 @@ function App() {
   }, [menu]);
 
   useEffect(() => {
-    const config = { currentTheme, establishmentName, customBackground, customLogo };
+    const config = { currentTheme, establishmentNames, subtitles, customBackground, customLogo, menus, menuPageTitle };
     try {
       localStorage.setItem("restoConfig", JSON.stringify(config));
     } catch (e) {
       console.error("Erreur sauvegarde config", e);
       toast.error("Sauvegarde config impossible : images trop lourdes.");
     }
-  }, [currentTheme, establishmentName, customBackground, customLogo]);
+  }, [currentTheme, establishmentNames, subtitles, customBackground, customLogo, menus, menuPageTitle]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -399,6 +494,14 @@ function App() {
     if (deleteModal.itemId === 'ALL') {
       // On ne supprime que les éléments appartenant aux catégories du thème actif
       const categoriesToDelete = activeTheme.categories;
+      const idsToDelete = menu.filter(item => categoriesToDelete.includes(item.categorie)).map(item => item.id);
+
+      // Nettoyer les menus composés qui contiennent les éléments supprimés
+      setMenus(prevMenus => prevMenus.map(m => ({
+        ...m,
+        selectedIds: m.selectedIds.filter(id => !idsToDelete.includes(id))
+      })));
+
       setMenu(menu.filter(item => !categoriesToDelete.includes(item.categorie)));
       setEditingDish(null);
       toast.info(`Le menu ${activeTheme.name} a été vidé.`);
@@ -407,6 +510,11 @@ function App() {
       if (editingDish && editingDish.id === deleteModal.itemId) {
         setEditingDish(null);
       }
+      // Nettoyer les menus qui contiennent cet élément
+      setMenus(prevMenus => prevMenus.map(m => ({
+        ...m,
+        selectedIds: m.selectedIds.filter(id => id !== deleteModal.itemId)
+      })));
       toast.info("Élément supprimé.");
     }
     setDeleteModal({ isOpen: false, itemId: null });
@@ -415,10 +523,45 @@ function App() {
   const handleThemeSelect = (themeId) => {
     if (isModeLocked && themeId !== currentTheme) return;
     setCurrentTheme(themeId);
-    setEstablishmentName(themes[themeId].labels.title);
     setIsModeLocked(true);
     setIsThemeSelectorOpen(false);
+    setEditingDish(null);
   };
+
+  const handleUpdateEstablishmentName = (newName) => {
+    setEstablishmentNames(prev => ({
+      ...prev,
+      [currentTheme]: newName
+    }));
+  };
+
+  const handleUpdateSubtitle = (newSubtitle) => {
+    setSubtitles(prev => ({
+      ...prev,
+      [currentTheme]: newSubtitle
+    }));
+  };
+
+  const handleUpdateTitle = (newTitle) => {
+    setMenuPageTitle(prev => ({
+      ...prev,
+      [currentTheme]: newTitle
+    }));
+  };
+
+  // Filtrage des données pour le rendu (PDF et Modale) en fonction du thème actif
+  const currentThemeMenus = menus.filter(m => m.theme === currentTheme);
+  const currentThemeTitle = menuPageTitle[currentTheme] || "Nos Menus";
+  const establishmentName = establishmentNames[currentTheme] || activeTheme.labels.title;
+  const subtitle = subtitles[currentTheme] || activeTheme.labels.subtitle;
+
+  if (isLoading) {
+    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)' }}>Chargement...</div>;
+  }
+
+  if (!isAuthorized) {
+    return <LoginScreen onLogin={login} />;
+  }
 
   return (
     <div 
@@ -435,7 +578,9 @@ function App() {
       <div className="form-wrapper">
         <Header
           establishmentName={establishmentName}
-          setEstablishmentName={setEstablishmentName}
+          setEstablishmentName={handleUpdateEstablishmentName}
+          subtitle={subtitle}
+          setSubtitle={handleUpdateSubtitle}
           activeTheme={activeTheme}
           onShowThemeSelector={() => { setIsModeLocked(true); setIsThemeSelectorOpen(true); }}
           setIsCsvCreatorOpen={setIsCsvCreatorOpen}
@@ -446,6 +591,7 @@ function App() {
   handleLogoUpload={handleLogoUpload}
           customLogo={customLogo}
           setCustomLogo={setCustomLogo}
+          onLogout={() => setIsLogoutModalOpen(true)}
         />
 
         <MenuForm 
@@ -462,11 +608,12 @@ function App() {
             theme={effectiveTheme} 
             onEdit={setEditingDish} 
             onDelete={requestDelete} 
+            onComposeMenu={() => setIsMenuComposerOpen(true)}
           />
           {menu.length > 0 && (
             <PDFDownloadLink
-              key={`${currentTheme}-${menu.length}`}
-              document={<MenuPdf menu={menu} theme={effectiveTheme} establishmentName={establishmentName} />}
+              key={`${currentTheme}-${menu.length}-${JSON.stringify(currentThemeMenus)}-${currentThemeTitle}-${establishmentName}-${subtitle}`}
+              document={<MenuPdf menu={menu} theme={effectiveTheme} establishmentName={establishmentName} subtitle={subtitle} menus={currentThemeMenus} menuPageTitle={currentThemeTitle} />}
               fileName="carte_restaurant.pdf"
               className="pdf-link"
             >
@@ -487,6 +634,14 @@ function App() {
             : "Cette action est irréversible. Voulez-vous vraiment retirer cet élément de votre carte ?"}
         />
 
+        <ConfirmationModal 
+          isOpen={isLogoutModalOpen}
+          onClose={() => setIsLogoutModalOpen(false)}
+          onConfirm={logout}
+          title="Se déconnecter ?"
+          message="Vous êtes sur le point de quitter votre session sécurisée. Voulez-vous continuer ?"
+        />
+
         <CsvCreatorModal 
           isOpen={isCsvCreatorOpen}
           onClose={() => setIsCsvCreatorOpen(false)}
@@ -494,7 +649,24 @@ function App() {
           theme={effectiveTheme}
         />
 
-        <ToastContainer position="bottom-right" autoClose={3000} theme="colored" />
+        <MenuComposerModal
+          isOpen={isMenuComposerOpen}
+          onClose={() => setIsMenuComposerOpen(false)}
+          menu={menu}
+          theme={effectiveTheme}
+          menus={menus}
+          onUpdateMenus={setMenus}
+          menuPageTitle={currentThemeTitle}
+          onUpdateTitle={handleUpdateTitle}
+        />
+
+        <ToastContainer 
+          position="bottom-right" 
+          autoClose={3000} 
+          theme="colored" 
+          toastStyle={{ whiteSpace: "nowrap", width: "auto" }}
+         
+        />
       </div>
 
       {/* Modale de sélection de thème */}
