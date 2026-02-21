@@ -7,6 +7,7 @@ import LoginScreen from "./components/LoginScreen";
 import ConfirmationModal from "./components/ConfirmationModal";
 import CsvCreatorModal from "./components/CsvCreatorModal";
 import MenuComposerModal from "./components/MenuComposerModal";
+import HelpChat from "./components/HelpChat";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { PDFDownloadLink } from "@react-pdf/renderer";
