@@ -2,12 +2,35 @@
 import crypto from 'crypto';
 
 // Récupération des secrets depuis les variables d'environnement Vercel
-const SALT = process.env.SECURE_SALT;
-const JWT_SECRET = process.env.JWT_SECRET; // Clé pour signer le token
+const SALT = process.env.SECURE_SALT || "salt_de_test_insecure_123";
+const JWT_SECRET = process.env.JWT_SECRET || "jwt_secret_de_test_insecure_456"; // Clé pour signer le token
 
 // Liste des hashs autorisés (à mettre dans une variable d'environnement ALLOWED_HASHES sur Vercel)
 // Format attendu pour la variable d'env : ["hash1", "hash2", ...]
 const ALLOWED_HASHES = JSON.parse(process.env.ALLOWED_HASHES || "[]");
+// Parsing sécurisé et flexible de ALLOWED_HASHES
+let ALLOWED_HASHES = [];
+try {
+  const rawHashes = process.env.ALLOWED_HASHES;
+  if (rawHashes) {
+    // Supporte le format JSON ["hash"] ou CSV hash1,hash2
+    if (rawHashes.trim().startsWith('[')) {
+      ALLOWED_HASHES = JSON.parse(rawHashes);
+    } else {
+      ALLOWED_HASHES = rawHashes.split(',').map(h => h.trim()).filter(Boolean);
+    }
+  }
+} catch (e) {
+  console.error("Erreur critique lors du parsing de ALLOWED_HASHES:", e);
+}
+
+// MODE TEST : Si aucune liste n'est fournie, on autorise la clé "Marc" par défaut
+if (ALLOWED_HASHES.length === 0) {
+  console.warn("⚠️ Mode TEST activé : Aucune variable d'environnement trouvée.");
+  console.warn("⚠️ La clé 'Marc' est autorisée par défaut.");
+  const testHash = crypto.createHash('sha256').update(SALT + "Marc").digest('hex');
+  ALLOWED_HASHES.push(testHash);
+}
 
 // Définition de l'origine autorisée pour CORS
 // En production sur Vercel, utilise l'URL de déploiement. En local, autorise tout.
@@ -41,10 +64,7 @@ const verifyToken = (token) => {
 
 export default async function handler(req, res) {
   // Vérification critique au démarrage de la fonction
-  if (!SALT || !JWT_SECRET || ALLOWED_HASHES.length === 0) {
-    console.error("Variables d'environnement manquantes : SECURE_SALT, JWT_SECRET ou ALLOWED_HASHES.");
-    return res.status(500).json({ error: "Configuration serveur incomplète." });
-  }
+  // (Désactivée pour le mode test sans variables d'environnement)
 
   // Configuration CORS pour autoriser votre front-end
   res.setHeader('Access-Control-Allow-Credentials', true);
