@@ -670,6 +670,9 @@ function App() {
         />
       </div>
 
+      {/* Intégration du composant de chat sécurisé */}
+      <HelpChat />
+
       {/* Modale de sélection de thème */}
       {isThemeSelectorOpen && (
         <div className="modal-overlay" onClick={() => setIsThemeSelectorOpen(false)}>
